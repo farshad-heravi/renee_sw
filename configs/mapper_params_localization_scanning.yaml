@@ -25,7 +25,7 @@ slam_toolbox:
     resolution: 0.1
     min_laser_range: 0.0 #for rastering images
     max_laser_range: 10.0 #for rastering images
-    minimum_time_interval: 0.5
+    minimum_time_interval: 0.1   # correct the pose often: the sim odometry lags
     transform_timeout: 0.2
     tf_buffer_duration: 30.
     stack_size_to_use: 40000000 #// program needs a larger stack size to serialize large maps
