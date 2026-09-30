@@ -8,7 +8,10 @@ source install/setup.bash
 # since the data source, params file, and clock (use_sim_time) all differ.
 # Rover model for RViz's RobotModel display (the bridge relays no
 # robot_description); navigation-real reuses this RViz window.
-ros2 launch renee_bringup_utils real_robot_model.launch.py &
+# Excluded for now: /robot_description comes from the UR driver's
+# real_rsp.launch.py (bringup_actions real_robot:=true), base + arm; a second
+# publisher here would race it and break the UR controller_manager.
+# ros2 launch renee_bringup_utils real_robot_model.launch.py &
 # Drop front-laser returns that hit the robot's own chassis before
 # slam_toolbox sees them (scan_topic: /robot/front_laser/scan_filtered);
 # unfiltered, they get mapped as specks along the driven path — see
