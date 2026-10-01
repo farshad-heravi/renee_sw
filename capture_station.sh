@@ -15,15 +15,22 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Same root record_data.py uses by default (REPO_ROOT/data inside
 # renee_perception), so vogui/ and realsense/ end up under the same dataset
 # tree with nothing to move afterwards.
-DEFAULT_OUTDIR="$SCRIPT_DIR/renee_perception/data/dataset"
+DATA_ROOT="$SCRIPT_DIR/renee_perception/data"
+DEFAULT_OUTDIR="$DATA_ROOT/dataset"
 
 STATION="${1:-}"
 POSE="${2:-}"
 DURATION="${3:-8}"
 OUTDIR="${4:-$DEFAULT_OUTDIR}"
+# A bare folder name (no '/') goes under the data root, next to dataset/;
+# anything with a '/' is used as a path.
+if [[ "$OUTDIR" != */* ]]; then
+  OUTDIR="$DATA_ROOT/$OUTDIR"
+fi
 
 if [[ -z "$STATION" || -z "$POSE" ]]; then
-  echo "Usage: $0 <station_id> <pose_id> [duration_seconds=8] [outdir=$DEFAULT_OUTDIR]"
+  echo "Usage: $0 <station_id> <pose_id> [duration_seconds=8] [outdir=dataset]"
+  echo "  outdir: folder name under $DATA_ROOT (e.g. dataset_run2), or a path containing '/'"
   echo "  pose_id: 1 or 2 (each station has 2 camera poses)"
   exit 1
 fi
