@@ -44,13 +44,13 @@ configures this independently.
 
 Alternatively, without touching `.env`, you can opt in per-command with `-f`:
 ```
-docker compose -f docker-compose.yaml -f docker-compose.gpu.yaml up world spawn-robot
+docker compose -f docker-compose.yaml -f docker-compose.gpu.yaml up world-sim spawn-robot-sim
 ```
 
 ### How to use
 For spawning the world and the robot
 ```
-docker compose up world spawn-robot
+docker compose up world-sim spawn-robot-sim
 ```
 you would see the following windows
 <img width="1851" height="1174" alt="Screenshot from 2026-04-23 16-06-33" src="https://github.com/user-attachments/assets/c4094aa8-d5e2-498b-89ee-a330c584e47d" />
@@ -58,7 +58,7 @@ you would see the following windows
 
 In the second terminal
 ```
-docker compose up navigation localization
+docker compose up navigate-sim localize-sim
 ```
 
 In the third terminal

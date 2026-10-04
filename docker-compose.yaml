@@ -21,11 +21,11 @@ x-gazebo-simulation: &simulation
     # (symptom: GUI window opens but stays blank, `gz topic -l` empty from
     # a second process). Pin it to loopback so it matches the host route.
     GZ_IP: 127.0.0.1
-    # Gazebo world for the `world`/`spawn-robot` services: loads
+    # Gazebo world for the `world-sim`/`spawn-robot-sim` services: loads
     # renee_rbvogui_navigation/world/${GZ_WORLD}.sdf; spawn poses per world are
-    # in world_poses.sh. e.g. `GZ_WORLD=campetella docker compose up slam`.
+    # in world_poses.sh. e.g. `GZ_WORLD=campetella docker compose up slam-sim`.
     GZ_WORLD: ${GZ_WORLD:-renee_room}
-    # Saved map for the sim `localization` service: maps/${SIM_MAP}.yaml
+    # Saved map for the sim `localize-sim` service: maps/${SIM_MAP}.yaml
     # (map_server) + maps/${SIM_MAP}.posegraph/.data (slam_toolbox). Must match
     # GZ_WORLD: renee_room <-> renee_room, campetella <-> renee_environment.
     SIM_MAP: ${SIM_MAP:-renee_room}
@@ -38,7 +38,7 @@ x-gazebo-simulation: &simulation
     # since every node here runs on this one machine.
     # Unicast-only discovery caps participants per host at
     # MaxAutoParticipantIndex+1 (default 10); the real-robot stack (bridge +
-    # localize_real + navigation-real + UR driver/MoveIt + RViz) exceeds that
+    # localize-real + navigate-real + UR driver/MoveIt + RViz) exceeds that
     # and new nodes die with "Failed to find a free participant index".
     # Must match vogui_ros1_ros2_bridge/docker-compose.yml.
     CYCLONEDDS_URI: "<CycloneDDS><Domain><General><Interfaces><NetworkInterface name=\"lo\"/></Interfaces><AllowMulticast>false</AllowMulticast></General><Discovery><ParticipantIndex>auto</ParticipantIndex><MaxAutoParticipantIndex>120</MaxAutoParticipantIndex><Peers><Peer address=\"127.0.0.1\"/></Peers></Discovery></Domain></CycloneDDS>"
@@ -243,7 +243,7 @@ services:
       timeout: 3s
       retries: 3
       start_period: 30s
-  world:
+  world-sim:
     <<: *simulation
     command: /world_spawn_entrypoint.sh
     depends_on:
@@ -254,22 +254,22 @@ services:
       test: ["CMD", "/renee/install/renee_bringup_utils/lib/renee_bringup_utils/healthcheck.sh",
              "topic", "/clock", "--msg"]
       start_period: 240s
-  spawn-robot:
+  spawn-robot-sim:
     <<: *simulation
     command: /robot_spawn_entrypoint.sh
     depends_on:
-      world:
+      world-sim:
         condition: service_healthy
     healthcheck:
       <<: *healthcheck_defaults
       test: ["CMD", "/renee/install/renee_bringup_utils/lib/renee_bringup_utils/healthcheck.sh",
              "controller", "/robot/controller_manager", "joint_trajectory_controller", "--state", "active"]
       start_period: 120s
-  slam:
+  slam-sim:
     <<: *simulation
     command: /slam_entrypoint.sh
     depends_on:
-      spawn-robot:
+      spawn-robot-sim:
         condition: service_healthy
     healthcheck:
       <<: *healthcheck_defaults
@@ -311,10 +311,10 @@ services:
     <<: *simulation
     # Real-robot mapping: consumes odom/scan/tf relayed by `bridge-real`
     # instead of Gazebo. Same slam_toolbox launch /
-    # configs/mapper_params_online_async.yaml as the `slam` (sim) service —
+    # configs/mapper_params_online_async.yaml as the `slam-sim` service —
     # only the data source differs.
     # Uses its own entrypoint (not slam_entrypoint.sh) to also bring up an
-    # RViz window: the sim `slam` service already gets one via
+    # RViz window: the sim `slam-sim` service already gets one via
     # robot_spawn_entrypoint.sh (Fixed Frame: world), but that frame doesn't
     # exist in the real-robot TF tree.
     command: /slam_real_entrypoint.sh
@@ -326,11 +326,11 @@ services:
       test: ["CMD", "/renee/install/renee_bringup_utils/lib/renee_bringup_utils/healthcheck.sh",
              "tf", "robot_map", "robot_odom"]
       start_period: 60s
-  localize_real:
+  localize-real:
     <<: *simulation
     # Real-robot localization: loads the map/ maps/real_robot_environment
     # built by slam-real and localizes against it using the same bridged
-    # odom/scan/tf data. Separate from `localization` (Gazebo-sim, untouched
+    # odom/scan/tf data. Separate from `localize-sim` (Gazebo-sim, untouched
     # here on purpose) since the params file, map, and use_sim_time all
     # differ — see configs/mapper_params_localization_real.yaml.
     command: /localize_real_entrypoint.sh
@@ -342,21 +342,21 @@ services:
       test: ["CMD", "/renee/install/renee_bringup_utils/lib/renee_bringup_utils/healthcheck.sh",
              "tf", "robot_map", "robot_odom"]
       start_period: 60s
-  navigation:
+  navigate-sim:
     <<: *simulation
     command: /navigation_entrypoint.sh
     depends_on:
-      localization:
+      localize-sim:
         condition: service_healthy
     healthcheck:
       <<: *healthcheck_defaults
       test: ["CMD", "/renee/install/renee_bringup_utils/lib/renee_bringup_utils/healthcheck.sh",
              "node", "/robot/bt_navigator"]
       start_period: 60s
-  navigation-real:
+  navigate-real:
     <<: *simulation
-    # Real-robot Nav2: analogous to `navigation` (Gazebo-sim), but depends on
-    # `localize_real` instead of `localization`, and uses
+    # Real-robot Nav2: analogous to `navigate-sim` (Gazebo-sim), but depends on
+    # `localize-real` instead of `localize-sim`, and uses
     # navigation_real_entrypoint.sh to point controller_server/behavior_server
     # at the *_real.yaml configs (plain Twist cmd_vel on
     # /robot/move_base/cmd_vel, use_sim_time: false) required by
@@ -365,7 +365,7 @@ services:
     depends_on:
       bridge-real:
         condition: service_healthy
-      localize_real:
+      localize-real:
         condition: service_healthy
     healthcheck:
       <<: *healthcheck_defaults
@@ -392,11 +392,11 @@ services:
       test: ["CMD", "/renee/install/renee_bringup_utils/lib/renee_bringup_utils/healthcheck.sh",
              "action", "/robot/move_action"]
       start_period: 90s
-  localization:
+  localize-sim:
     <<: *simulation
     command: /localization_entrypoint.sh
     depends_on:
-      spawn-robot:
+      spawn-robot-sim:
         condition: service_healthy
     healthcheck:
       <<: *healthcheck_defaults
@@ -410,7 +410,7 @@ services:
     <<: *simulation
     command: /moveit_entrypoint.sh
     depends_on:
-      spawn-robot:
+      spawn-robot-sim:
         condition: service_healthy
     healthcheck:
       <<: *healthcheck_defaults
@@ -426,7 +426,7 @@ services:
     depends_on:
       moveit:
         condition: service_healthy
-      navigation:
+      navigate-sim:
         condition: service_healthy
     healthcheck:
       <<: *healthcheck_defaults

@@ -3,7 +3,7 @@ set -e
 cd /renee
 source install/setup.bash
 # Real-robot Nav2 bring-up, analogous to navigation_entrypoint.sh (Gazebo-sim
-# `navigation` service). Two overrides beyond use_sim:=false, both required
+# `navigate-sim` service). Two overrides beyond use_sim:=false, both required
 # for the vogui_ros1_ros2_bridge path (see nav2_task.launch.py comments):
 # - controller_config/behavior_config: the _real.yaml variants, which set
 #   enable_stamped_cmd_vel: false and use_sim_time: false in their nested

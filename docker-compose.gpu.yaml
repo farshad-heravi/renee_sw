@@ -1,7 +1,7 @@
 # Optional override to enable NVIDIA GPU acceleration for the simulation
 # services. Requires the NVIDIA Container Toolkit installed on the host
 # (see README.md). Usage:
-#   docker compose -f docker-compose.yaml -f docker-compose.gpu.yaml up world spawn-robot
+#   docker compose -f docker-compose.yaml -f docker-compose.gpu.yaml up world-sim spawn-robot-sim
 x-gazebo-simulation-gpu: &simulation_gpu
   environment:
     NVIDIA_VISIBLE_DEVICES: all
@@ -15,15 +15,15 @@ x-gazebo-simulation-gpu: &simulation_gpu
             capabilities: [gpu]
 
 services:
-  world:
+  world-sim:
     <<: *simulation_gpu
-  spawn-robot:
+  spawn-robot-sim:
     <<: *simulation_gpu
-  slam:
+  slam-sim:
     <<: *simulation_gpu
-  navigation:
+  navigate-sim:
     <<: *simulation_gpu
-  localization:
+  localize-sim:
     <<: *simulation_gpu
   moveit:
     <<: *simulation_gpu

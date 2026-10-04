@@ -9,7 +9,7 @@ source install/setup.bash
 # Standalone arm: no rover TF/localization is running, so give MoveIt a fixed
 # robot_map (identity) and the rover's fixed footprint->base->chassis offsets
 # (rbvogui URDF) that the arm TF hangs from. Set UR_STATIC_MAP_TF=false when the
-# rover stack (bridge-real/localize_real) is also up: it already owns these frames.
+# rover stack (bridge-real/localize-real) is also up: it already owns these frames.
 if [ "${UR_STATIC_MAP_TF:-true}" = "true" ]; then
     ros2 run tf2_ros static_transform_publisher --frame-id robot_map --child-frame-id robot_base_footprint &
     ros2 run tf2_ros static_transform_publisher --z 0.1165 --frame-id robot_base_footprint --child-frame-id robot_base_link &
