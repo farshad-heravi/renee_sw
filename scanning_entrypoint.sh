@@ -28,14 +28,14 @@ export ROBOT_MODEL=rbvogui_plus
 # Wait for the Gazebo world to actually be running (clock publishing)
 wait_for_ros --timeout 90 topic /clock --msg && ros2 launch robotnik_gazebo_ignition spawn_robot.launch.py robot_id:=robot robot:=rbvogui \
 wrist_camera:=stereolabs_zed2i \
-ur_type:=ur5e \
+ur_type:=ur15 \
 run_rviz:=true \
 x:=2.15 \
 y:=-0.3 \
 yaw:=1.5708 \
 rviz_config:=$RENEE_SRC_PATH/renee_rbvogui_navigation/config/rviz_config.rviz \
 low_performance_simulation:=true \
-end_effector:=none \
+end_effector:=pointer_tester \
 use_tool_changer:=true &
 
 # Spawn all 4 detachable tools (RSPs + Gazebo models + bridges + tool_manager),
