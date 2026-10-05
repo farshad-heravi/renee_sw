@@ -113,6 +113,61 @@ x-healthcheck-defaults: &healthcheck_defaults
 
 # All healthchecks shell out to renee_bringup_utils' wait_for_ros (built into
 # /renee/install by the `builder` service).
+# --- renee_vision_modules (ZED + screw pose + FoundationPose 6D pose) -------------------------------
+# Own images built from renee_vision_modules/docker/Dockerfile (ROS 2 Jazzy + ZED SDK + PyTorch),
+# independent of the Gazebo sim image above. All services are behind the `vision` / `vision-fp`
+# profiles so a plain `docker compose up` does not start (or build) them, e.g.:
+#   docker compose --profile vision build vision-screw-pose
+#   docker compose --profile vision up vision-screw-pose
+# The ZED is on the Jetson (reached via the capture server), so there is no local ZED wrapper service.
+x-vision: &vision
+  image: robot-perception-platform:jazzy-zed
+  build:
+    context: ./renee_vision_modules
+    dockerfile: docker/Dockerfile
+    target: base
+  network_mode: host
+  ipc: host
+  privileged: true
+  environment:
+    ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-0}
+    NVIDIA_VISIBLE_DEVICES: all
+    NVIDIA_DRIVER_CAPABILITIES: all
+    DISPLAY: ${DISPLAY:-}
+    # Same middleware and discovery settings as the sim/real services above, otherwise the vision
+    # topics are invisible to the action servers. Must match x-gazebo-simulation.
+    RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
+    CYCLONEDDS_URI: "<CycloneDDS><Domain><General><Interfaces><NetworkInterface name=\"lo\"/></Interfaces><AllowMulticast>false</AllowMulticast></General><Discovery><ParticipantIndex>auto</ParticipantIndex><MaxAutoParticipantIndex>120</MaxAutoParticipantIndex><Peers><Peer address=\"127.0.0.1\"/></Peers></Discovery></Domain></CycloneDDS>"
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: all
+            capabilities: [gpu, compute, utility, graphics, video]
+  volumes:
+    - /dev:/dev
+    - /dev/shm:/dev/shm
+    - /tmp/.X11-unix:/tmp/.X11-unix
+    - ./renee_vision_modules/local/models:/workspace/models
+    - ./renee_vision_modules/local/shared:/workspace/shared
+    - ./renee_vision_modules/local/output:/workspace/output
+    - ./renee_vision_modules/local/calibration:/workspace/calibration
+    - ./renee_vision_modules/local/cache:/workspace/cache
+    - ./renee_vision_modules/local/zed_cache/resources:/usr/local/zed/resources
+    - ./renee_vision_modules/local/zed_cache/settings:/usr/local/zed/settings
+
+# 6D pose image: same volumes and GPU, built on top of the vision base image
+x-vision-fp: &vision_fp
+  <<: *vision
+  image: robot-perception-platform:jazzy-zed-fp
+  build:
+    context: ./renee_vision_modules
+    dockerfile: docker/Dockerfile
+    target: fp
+    args:
+      CUDA_ARCH_LIST: ${CUDA_ARCH_LIST:-7.5;8.0;8.6;8.9;9.0;12.0}
+
 services:
   fuel-cache-init:
     <<: *simulation
@@ -513,6 +568,20 @@ services:
   wrist-calibration-rviz:
     <<: *simulation
     command: /wrist_calibration_entrypoint.sh rviz ${WCC_ARGS:-}
+  vision-screw-pose:
+    <<: *vision
+    profiles: ["vision"]
+    command: >-
+      bash -lc '
+      python3 /opt/robot_platform/docker/check_env.py >/tmp/check.log 2>&1 || { cat /tmp/check.log; exit 2; };
+      test -f /workspace/calibration/zed2i_intrinsics.json || { echo "Missing intrinsics. Run: renee_vision_modules/scripts/export_intrinsics.sh"; exit 2; };
+      ros2 launch screw_pose_ros2 screw_pose_live.launch.py target_frame:=${TARGET_FRAME:-}'
+  # fully automatic 6D pose: docker compose --profile vision-fp run --rm vision-fp-auto --data ... --cad ... --out ...
+  vision-fp-auto:
+    <<: *vision_fp
+    profiles: ["vision-fp"]
+    entrypoint: ["/entrypoint.sh", "fp_auto"]
+    command: ["--help"]
 volumes:
   tmp:
   gz_fuel_cache:
