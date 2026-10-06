@@ -106,7 +106,7 @@
 	url = git@github.com:alefram/renee_planner.git
 	branch = main
 [submodule "wrist_camera_calibration"]
-	path = wrist_camera_calibration/wrist_camera_calibration
+	path = wrist_camera_calibration
 	url = git@github.com:farshad-heravi/wrist_camera_calibration.git
 	branch = master
 [submodule "renee_vision_modules"]
