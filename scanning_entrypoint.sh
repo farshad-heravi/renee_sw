@@ -10,10 +10,12 @@ ros2 launch robotnik_gazebo_ignition spawn_world.launch.py \
 world_path:=$RENEE_SRC_PATH/../../install/renee_rbvogui_navigation/share/renee_rbvogui_navigation/world/scanning.sdf \
 gui:=false &
 
-# Publish static TF: world -> robot_map; x y z should match with those when spawning the robot in spawn docker service
+# Publish static TF: world -> robot_map.  scanning_map.posegraph was recorded
+# with its origin at the robot spawn pose, so x y yaw must match the robot
+# spawn below (this places the Campetella TF on top of the SLAM map).
 ros2 run tf2_ros static_transform_publisher \
-  --x 3.0 --y 3.0 --z 0.0 \
-  --roll 0 --pitch 0 --yaw 0 \
+  --x 2.15 --y -0.3 --z 0.0 \
+  --roll 0 --pitch 0 --yaw 1.5708 \
   --frame-id world \
   --child-frame-id robot_map &
 

@@ -16,7 +16,7 @@ slam_toolbox:
 
     # if you'd like to start localizing on bringup in a map and pose
     map_file_name: /renee/src/renee_sw/maps/scanning_map
-    map_start_pose: [-0.5, -0.5, 0.0]
+    map_start_pose: [0.0, 0.0, 0.0]  # posegraph origin = robot spawn pose (scanning_entrypoint.sh)
 
     debug_logging: false
     throttle_scans: 1
